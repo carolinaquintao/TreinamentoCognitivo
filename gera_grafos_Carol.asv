@@ -1,0 +1,88 @@
+clear
+addpath('Y:\MylenaReis\Fieldtrip')
+addpath('.\PreprocessigCarol_GC_Antes\utils')
+
+delete('./S11D/Connectivity_S11D/prompt.mat');
+delete('./S11D/Connectivity_S11D/thrd.mat');
+periodo = 'Antes';%'Depois';%
+path_conn = ['Y:\TreinamentoCognitivo\Coletas\DADOS_PROCESSADOS\GrupoTreinado\Connectivity_5i_5f\' periodo '\'];
+% path_conn = ['Y:\TreinamentoCognitivo\Coletas\DADOS_PROCESSADOS\GrupoControle\Connectivity_5i_5f\' periodo '\'];
+
+freqbdw_label = {'alfa','beta','teta','alfa1','alfa2','beta1','beta2','gama1','gama2','gama','delta','mu','baixasFreq'};
+% freqbdw = {'15:27', '27:53', '8:14', '15:19', '19:27', '27:34', '24:53', '53:104', '104:172', '53:172', '1:8' '22:27', '1:15'};
+
+freqbdw = {'8:15','15:30','4:8','8:10','10:15','15:19','19:30','30:60','60:100','30:100','1:4','12:15','1:8'};
+%% Get names from folder
+[names_list] = getNamesFromFolder(path_conn,'*');
+
+%% organizando matrizes (de struct para matriz)
+for i = 1:length(names_list)  %12
+    disp(['Suj ',num2str(i)]);
+    a = split(names_list{i},'_');
+    load([path_conn,names_list{i},'\',['Bench_' a{1} ],'\',[a{1} '_freq\'],'conn_data_cell.mat']);
+    for j =1:2 %Para cada minuto
+        disp(['Min ',num2str(j)]);
+        for l = 1:length(freqbdw) %bdw % 7
+            conn_matrix_permin{i,j} = conn_data_cell{1,j}{1,1}.wpli_debiasedspctrm;%conn_matrix_permin0.conn_data_cell{1,2}{1,1}.wpli_debiasedspctrm
+            conn_matrix_perMeanfreq{i,l,j} = mean(conn_matrix_permin{i,j}(:,:,eval(freqbdw{l})),3);%para grafo!!!
+        end
+    end
+end
+
+clear conn_matrix_permin conn_matrix_permin0
+disp('Geracao de matrix ok');
+
+%% Frequencias %%%%rodar aqui para gerar correlacao sem gerar matriz e psd!!
+%Seguindo a mesma ordem que no PSD
+% freqbdw_label = {'alfa','beta','teta','alfa1','alfa2','beta1','beta2'};
+% freqbdw = {'8:15','15:30','4:8','8:10','10:15','15:19','19:30'};
+%Seguindo a mesma ordem que no PSD
+
+
+%Custom positions of EEG1020 (plotting)
+% load('./Matrizes/tx.mat');
+% load('./Matrizes/ty.mat');
+for l = 1:length(freqbdw)
+    
+    for i = 1:length(names_list)  %12
+        v_conn_data_graph_analysis_bencha{l,i} = conn_matrix_perMeanfreq{i,l,1};
+        v_conn_data_graph_analysis_benchb{l,i} = conn_matrix_perMeanfreq{i,l,2};%,conn_matrix_perMeanfreq{i,l,2}};%{conn_matrix_meanfreq_meansubj_3i,conn_matrix_meanfreq_meansubj_3f};
+    end
+   
+%para fazer pela média das pessoas
+%     v_conn_data_graph_analysis_bench1{l} = mean(cat(3,v_conn_data_graph_analysis_bencha{l,:}),3);
+%     v_conn_data_graph_analysis_bench2{l} = mean(cat(3,v_conn_data_graph_analysis_benchb{l,:}),3);
+end
+
+v_conn_data_graph_analysis_bench_label = {['mean_' periodo '_5minI_1aColeta'],...
+    ['mean_' periodo '_5minF_1aColeta']};
+%para o nome da pasta
+sufix = cell(j,1);
+[sufix{1:end}] = deal(['GC_' periodo]);
+%para fazer pela média das pessoas
+% v_conn_data_graph_analysis_bench = {v_conn_data_graph_analysis_bench1,v_conn_data_graph_analysis_bench2};
+%para fazer por pessoa
+for i=1:length(names_list)
+    %para o nome do arquivo
+    nome = [periodo '_' ];
+    save('nome.mat','nome')
+    v_conn_data_graph_analysis_bench = {v_conn_data_graph_analysis_bench1,v_conn_data_graph_analysis_bench2};
+    cellfun(@graph_analysis_mst,v_conn_data_graph_analysis_bench,v_conn_data_graph_analysis_bench_label,sufix');
+end
+    
+% %%
+% for i = 1:length(names_list)  %12
+%     for l = 1:length(freqbdw)
+%         v_conn_data_graph_analysis_bench1{l,1} = conn_matrix_perMeanfreq{i,l,1};
+%         v_conn_data_graph_analysis_bench2{l,1} = conn_matrix_perMeanfreq{i,l,2};%,conn_matrix_perMeanfreq{i,l,2}};%{conn_matrix_meanfreq_meansubj_3i,conn_matrix_meanfreq_meansubj_3f};
+%     end
+%     v_conn_data_graph_analysis_bench_label = {[grupo '_' periodo '_suj' num2str(i) '_5minI_1aColeta'],...
+%             [grupo '_' periodo '_suj' num2str(i) '_5minF_1aColeta']};
+%     v_conn_data_graph_analysis_bench = {v_conn_data_graph_analysis_bench1,v_conn_data_graph_analysis_bench2};
+%     cellfun(@graph_analysis_mst,v_conn_data_graph_analysis_bench,v_conn_data_graph_analysis_bench_label);
+%
+% end
+
+% Bench
+disp('Fim');
+
